@@ -154,6 +154,7 @@ class Gendo(object):
         pp.pprint(user)
         pp.pprint(message)
         pp.pprint(channel)
+        pp.pprint(self.listeners)
 
         for rule, view_func, _, _, options in self.listeners:
             if rule(user, message):
