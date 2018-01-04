@@ -15,6 +15,8 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import select_autoescape
 from slackclient import SlackClient
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 from .scheduler import Task
 
