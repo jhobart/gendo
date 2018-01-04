@@ -148,6 +148,11 @@ class Gendo(object):
         }
         if not message:
             return
+
+        pp.pprint(user)
+        pp.pprint(message)
+        pp.pprint(channel)
+
         for rule, view_func, _, _, options in self.listeners:
             if rule(user, message):
                 args = inspect.getargspec(view_func).args
