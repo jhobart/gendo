@@ -174,6 +174,8 @@ class Gendo(object):
                         response = response.replace('{user.username}',
                                                     self.get_user_name(user))
                     self.speak(response, channel)
+            else:
+                print("No rule for message")
 
     def add_listener(self, rule, view_func, trigger, docs, **options):
         """Adds a listener to the listeners container; verifies that
