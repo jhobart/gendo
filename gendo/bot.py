@@ -151,10 +151,9 @@ class Gendo(object):
         if not message:
             return
 
-        pp.pprint(user)
-        pp.pprint(message)
-        pp.pprint(channel)
-        pp.pprint(self.listeners)
+        pp.pprint("User: " + user)
+        pp.pprint("Message: " + message)
+        pp.pprint("Channel: " + channel)
 
         for rule, view_func, _, _, options in self.listeners:
             if rule(user, message):
@@ -174,8 +173,7 @@ class Gendo(object):
                         response = response.replace('{user.username}',
                                                     self.get_user_name(user))
                     self.speak(response, channel)
-            else:
-                print("No rule for message")
+
 
     def add_listener(self, rule, view_func, trigger, docs, **options):
         """Adds a listener to the listeners container; verifies that
