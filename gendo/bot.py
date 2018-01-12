@@ -126,11 +126,7 @@ class Gendo(object):
                     # delay for longer and longer each retry in case of extended outages
                     current_delay = (self._retries + (self._retries - 1)) * 5  # fibonacci, bro
                     print(
-                        "Attempting reconnection %s of %s in %s seconds...",
-                        self._retries,
-                        max_retries,
-                        current_delay
-                    )
+                        "Attempting reconnection %s of %s in %s seconds..." % (self._retries, max_retries, current_delay))
                     sleep(current_delay)
                     self.running = self.client.rtm_connect()
                 except KeyboardInterrupt:
@@ -156,21 +152,17 @@ class Gendo(object):
         """
         self.running = self._auto_reconnect(self.client.rtm_connect())
         while self.running:
-            print(
-                "Slack connection successful using token <%s>. Response: %s",
-                self.client.token,
-                self.running
-            )
+            # print("Slack connection successful using token <%s>. Response: %s" % (self.client.token, self.running))
             try:
                 self.process_stream()
                 self.process_scheduled_tasks()
                 time.sleep(self.sleep)
 
             except KeyboardInterrupt:
-                self._logger.info("KeyboardInterrupt received.")
+                print("KeyboardInterrupt received.")
                 self.running = False
             except Exception as e:
-                self._logger.exception(e)
+                print(e)
                 self.running = self._auto_reconnect(self.client.rtm_connect())
 
 
