@@ -103,7 +103,7 @@ class Gendo(object):
             return f
         return decorator
 
-    def _auto_reconnect(self):
+    def _auto_reconnect(self, running):
         """Validates the connection boolean returned via `SlackClient.rtm_connect()`
         if running is False:
             * Attempt to auto reconnect a max of 5 times
@@ -117,8 +117,10 @@ class Gendo(object):
         running : bool
             The validated boolean value returned via `SlackClient.rtm_connect()`
         """
+        max_retries = 5 #TODO: Make configurable
+        self.running = running
         while not self.running:
-            if self._retries < self.slacker.settings.max_retries:
+            if self._retries < max_retries:
                 self._retries += 1
                 try:
                     # delay for longer and longer each retry in case of extended outages
@@ -126,11 +128,11 @@ class Gendo(object):
                     print(
                         "Attempting reconnection %s of %s in %s seconds...",
                         self._retries,
-                        self.slacker.settings.max_retries,
+                        max_retries,
                         current_delay
                     )
                     sleep(current_delay)
-                    self.running = self.slacker.rtm_api.rtm_connect()
+                    self.running = self.client.rtm_connect()
                 except KeyboardInterrupt:
                     print("KeyboardInterrupt received.")
                     break
