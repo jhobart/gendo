@@ -65,20 +65,20 @@ class Gendo(object):
         """
         # If string, make a simple match callable
         if isinstance(supplied_rule, six.string_types):
-            return lambda user, message: supplied_rule in message.lower()
+            return lambda user, message, channel: supplied_rule in message.lower()
 
         if not six.callable(supplied_rule):
             raise ValueError('Bot rules must be callable or strings')
 
-        expected = ('user', 'message')
+        expected = ('user', 'message', 'channel')
         signature = tuple(inspect.getargspec(supplied_rule).args)
         try:
             # Support class- and instance-methods where first arg is
             # something like `self` or `cls`.
-            assert len(signature) in (2, 3)
+            assert len(signature) in (2, 3, 4)
             assert expected == signature or expected == signature[-2:]
         except AssertionError:
-            msg = 'Rule signuture must have only 2 arguments: user, message'
+            msg = 'Rule signuture must have only 3 arguments: user, message, channel'
             raise ValueError(msg)
 
         return supplied_rule
@@ -103,6 +103,75 @@ class Gendo(object):
             return f
         return decorator
 
+    def _auto_reconnect(self):
+        """Validates the connection boolean returned via `SlackClient.rtm_connect()`
+        if running is False:
+            * Attempt to auto reconnect a max of 5 times
+            * For every attempt, delay reconnection (F_n)*5, where n = num of retries
+        Parameters
+        -----------
+        running : bool
+            The boolean value returned via `SlackClient.rtm_connect()`
+        Returns
+        --------
+        running : bool
+            The validated boolean value returned via `SlackClient.rtm_connect()`
+        """
+        while not self.running:
+            if self._retries < self.slacker.settings.max_retries:
+                self._retries += 1
+                try:
+                    # delay for longer and longer each retry in case of extended outages
+                    current_delay = (self._retries + (self._retries - 1)) * 5  # fibonacci, bro
+                    print(
+                        "Attempting reconnection %s of %s in %s seconds...",
+                        self._retries,
+                        self.slacker.settings.max_retries,
+                        current_delay
+                    )
+                    sleep(current_delay)
+                    self.running = self.slacker.rtm_api.rtm_connect()
+                except KeyboardInterrupt:
+                    print("KeyboardInterrupt received.")
+                    break
+            else:
+                print ("Max retries exceeded")
+                break
+        return self.running
+
+    def run(self):
+        """Passes the `SlackClient.rtm_connect()` method into `self._auto_reconnect()` for validation
+        if self.running:
+            * Capture and parse events via `Slacker.process_events()` every second
+            * Close gracefully on KeyboardInterrupt (for testing)
+            * log any Exceptions and try to reconnect if needed
+        Parameters
+        -----------
+        n/a
+        Returns
+        --------
+        n/a
+        """
+        self.running = self._auto_reconnect(self.client.rtm_connect())
+        while self.running:
+            print(
+                "Slack connection successful using token <%s>. Response: %s",
+                self.client.slacktoken,
+                self.running
+            )
+            try:
+                self.process_stream()
+                self.process_scheduled_tasks()
+                time.sleep(self.sleep)
+
+            except KeyboardInterrupt:
+                self._logger.info("KeyboardInterrupt received.")
+                self.running = False
+            except Exception as e:
+                self._logger.exception(e)
+                self.running = self._auto_reconnect(self.client.rtm_connect())
+
+'''
     def run(self):
         self.running = True
         if self.client.rtm_connect():
@@ -116,17 +185,20 @@ class Gendo(object):
         except SystemExit:
             os._exit(0)
 
+
     def event_loop(self):
         while self.running:
             time.sleep(self.sleep)
             self.process_stream()
             self.process_scheduled_tasks()
+'''
 
     def read_stream(self):
         data = self.client.rtm_read()
         if not data:
             return data
         return [Box(d) for d in data][0]
+
 
     def process_stream(self):
         data = self.read_stream()
@@ -156,7 +228,7 @@ class Gendo(object):
         pp.pprint("Channel: " + channel)
 
         for rule, view_func, _, _, options in self.listeners:
-            if rule(user, message):
+            if rule(user, message, channel):
                 args = inspect.getargspec(view_func).args
                 kwargs = {k: v for k, v in sendable.items() if k in args}
                 response = view_func(**kwargs)
