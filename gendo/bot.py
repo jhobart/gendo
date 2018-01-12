@@ -171,27 +171,6 @@ class Gendo(object):
                 self._logger.exception(e)
                 self.running = self._auto_reconnect(self.client.rtm_connect())
 
-'''
-    def run(self):
-        self.running = True
-        if self.client.rtm_connect():
-            try:
-                self.event_loop()
-            except (KeyboardInterrupt, SystemExit):
-                log.info('attempting graceful shutdown...')
-                self.running = False
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
-
-
-    def event_loop(self):
-        while self.running:
-            time.sleep(self.sleep)
-            self.process_stream()
-            self.process_scheduled_tasks()
-'''
 
     def read_stream(self):
         data = self.client.rtm_read()
