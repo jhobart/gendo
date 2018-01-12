@@ -158,7 +158,7 @@ class Gendo(object):
         while self.running:
             print(
                 "Slack connection successful using token <%s>. Response: %s",
-                self.client.slacktoken,
+                self.client.token,
                 self.running
             )
             try:
